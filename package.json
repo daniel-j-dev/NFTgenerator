@@ -15,7 +15,7 @@
     "archiver": "^5.3.0",
     "aws-sdk": "^2.1066.0",
     "axios": "^0.25.0",
-    "canvas": "^2.9.0",
+    "canvas": "^2.11.2",
     "cors": "^2.8.5",
     "directory-tree": "^3.0.1",
     "dotenv": "^14.3.2",
