@@ -35,7 +35,7 @@ export const ModalComponent = (props) => {
   const [next, setNext] = React.useState(false);
   const [code, setCode] = React.useState("");
 
-  const handleClick = async () => {
+  const handleClick = async () => { // About to generate
     const data = {
       objects: objects,
       total: total,
@@ -46,6 +46,7 @@ export const ModalComponent = (props) => {
       name: name,
       description: description,
       URL: URL,
+      allCombos: true,
     };
     props.openLoadingModal();
     axios

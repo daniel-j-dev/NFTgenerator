@@ -133,7 +133,7 @@ const wr = (w) => {
   }
 };
 
-app.post("/submitDetails", (request, response) => {
+app.post("/submitDetails", (request, response) => { // About to generate
   const data = request.body;
   const uuid = data.uuid;
   const tree = data.folderTree;
@@ -144,6 +144,7 @@ app.post("/submitDetails", (request, response) => {
   const name = data.name;
   const description = data.description;
   const URL = data.URL;
+  const allCombos = data.allCombos; // Generate all possible combination & ignore rarity
   const context = canvas.getContext("2d", {
     patternQuality: "bilinear",
     quality: "bilinear",
@@ -180,6 +181,10 @@ app.post("/submitDetails", (request, response) => {
     fs.mkdirSync(`generated/${uuid}`, { recursive: true });
   }
 
+if (allCombos) {
+  generateUniqueImages(tree, layerData, uuid, name, description, URL, context, canvas);
+  return response.json("Success").status(200);
+} else {
   while (values) {
     var hash = 0;
     let objRarity = 0;
@@ -252,6 +257,8 @@ app.post("/submitDetails", (request, response) => {
     hash += 1;
     values -= 1;
   }
+}
+
   var endDate = new Date();
   var seconds = (endDate.getTime() - startDate.getTime()) / 1000;
   console.log("The total Time Taken was : ", seconds);
@@ -324,3 +331,85 @@ app.listen(port, () => {
 //       items.children &&
 //       items.children.forEach((item) => s3Actions.uploadFile(item.path));
 //   });
+
+
+
+function getAllCombinations(layers) {
+  // Start with an array containing an empty combination
+  let combinations = [[]];
+
+  // Iterate through each layer
+  for (let layer of layers) {
+    const newCombinations = [];
+
+    // Iterate through each existing combination
+    for (let combination of combinations) {
+      // Iterate through each child of the current layer
+      for (let child of layer.children) {
+        // Create a new combination by appending the current child to the existing combination
+        newCombinations.push([...combination, child]);
+      }
+    }
+
+    // Update the combinations array with the new combinations
+    combinations = newCombinations;
+  }
+
+  return combinations;
+}
+
+async function generateUniqueImages(tree, layerData, uuid, name, description, URL, context, canvas) {
+  const combinations = getAllCombinations(tree.children);
+  const metadata = [];
+
+  for (let i = 0; i < combinations.length; i++) {
+    const combination = combinations[i];
+    let objRarity = 0;
+    let totalRarity = 0;
+
+    // Use a for...of loop instead of forEach to allow await
+    for (let index = 0; index < combination.length; index++) {
+      const obj = combination[index];
+      objRarity += obj.rarity ? obj.rarity : 50;
+      totalRarity += 100;
+
+      // Await the loadImage function
+      const image = await loadImage(`./${obj.path}`);
+      context.drawImage(
+        image,
+        JSON.parse(layerData[index].x),
+        JSON.parse(layerData[index].y),
+        JSON.parse(layerData[index].width),
+        JSON.parse(layerData[index].height)
+      );
+    }
+
+    const buffer = canvas.toBuffer("image/png", 0);
+    fs.writeFileSync(__dirname + `/generated/${uuid}/${i}.png`, buffer);
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    const rarityPercentage = (objRarity / totalRarity) * 100;
+
+    // Metadata Generation
+    const dataImage = {
+      name: `${name} #${i}`,
+      description: description,
+      external_link: URL,
+      traits: {
+        rarity: rarityPercentage,
+      },
+    };
+
+    metadata.push(dataImage);
+  }
+
+  const jsonContent = JSON.stringify(metadata);
+  fs.writeFile(`generated/${uuid}/metadata.json`, jsonContent, "utf8", function (err) {
+    if (err) {
+      console.log("An error occurred while writing JSON Object to File.");
+      return console.log(err);
+    }
+
+    console.log("JSON file has been saved.");
+  });
+}
