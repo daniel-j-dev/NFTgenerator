@@ -2,6 +2,13 @@
 
 # Welcome to SickAlien X NFT Art Generator
 
+## Install steps
+
+On linux, run:
+- `sudo apt update`
+- `sudo apt install -y pkg-config libcairo2-dev libjpeg-dev libgif-dev librsvg2-dev build-essential libpango1.0-dev libpangocairo-1.0-0`
+- `npm install canvas --build-from-source`
+- `npm i`
 
 # Our NFT Art Generator is the best Interactive tool to make NFTs.
 
