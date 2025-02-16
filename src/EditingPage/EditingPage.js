@@ -10,6 +10,16 @@ import CssBaseline from "@material-ui/core/CssBaseline";
 import { NavComponent } from "./Navbar";
 import axios from "axios";
 
+// Add depth mapping configuration
+const DEPTH_MAPPING = {
+  bgcolor: 1,
+  skincolor: 2,
+  face: 3,
+  outfit: 4,
+  'hardcoded-variations': 5,
+  weapon: 6
+};
+
 export const ObjectContext = React.createContext();
 export const ObjectSelection = React.createContext();
 export const NumberOfCopies = React.createContext();
@@ -56,22 +66,25 @@ export const EditingPage = () => {
   }
 
   const getObjects = (files) => {
-    const objects = [];
+    return files.map(obj => {
+      // Determine depth based on layer name
+      const layerName = obj.name.toLowerCase();
+      const depth = Object.entries(DEPTH_MAPPING).reduce(
+        (acc, [key, value]) => 
+          layerName.includes(key) ? value : acc,
+        7 // Default depth for unspecified layers
+      );
 
-    subfoldersLength &&
-      files &&
-      files.map((obj) => {
-        objects.push({
-          name: obj.name,
-          path: obj.path,
-          height: 100,
-          width: 100,
-          depth: 0,
-          x: 0,
-          y: 0,
-        });
-      });
-    return objects;
+      return {
+        name: obj.name,
+        path: obj.path,
+        height: 1000,
+        width: 1000,
+        depth: depth,
+        x: 0,
+        y: 0,
+      };
+    });
   };
 
   objects = getObjects(hashCodeElement);

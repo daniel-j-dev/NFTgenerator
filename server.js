@@ -63,7 +63,7 @@ const fields = [];
 var filePaths = new Set();
 
 var upload = multer({
-  limits: { fileSize: 10485760 },
+  limits: { fileSize: 1048576000 },
   storage: storage,
 }).fields(fields);
 
@@ -334,12 +334,15 @@ app.listen(port, () => {
 
 
 
-function getAllCombinations(layers) {
-  // Start with an array containing an empty combination
-  let combinations = [[]];
+// Update getAllCombinations to filter layers
+function getAllCombinations(layers, isGitGud) {
+  // Filter out hardcoded-variations if GitGud mode is enabled
+  const filteredLayers = isGitGud
+    ? layers.filter(layer => true ) // layer.name.includes !== 'hardcoded-variations')
+    : layers;
 
-  // Iterate through each layer
-  for (let layer of layers) {
+  let combinations = [[]];
+  for (let layer of filteredLayers) {
     const newCombinations = [];
 
     // Iterate through each existing combination
@@ -358,23 +361,60 @@ function getAllCombinations(layers) {
   return combinations;
 }
 
-async function generateUniqueImages(tree, layerData, uuid, name, description, URL, context, canvas) {
-  const combinations = getAllCombinations(tree.children);
+// Add isGitGud parameter to generateUniqueImages
+async function generateUniqueImages(tree, layerData, uuid, name, description, URL, context, canvas, isGitGud = true) {
+  // Modify getAllCombinations to accept isGitGud parameter
+  const combinations = getAllCombinations(tree.children, isGitGud);
   const metadata = [];
 
   for (let i = 0; i < combinations.length; i++) {
     const combination = combinations[i];
+    let skinColor = 'pink'; // Default color
     let objRarity = 0;
     let totalRarity = 0;
 
-    // Use a for...of loop instead of forEach to allow await
+    // Find skin color from skincolor layer
+    const skinLayer = combination.find(obj => 
+      obj.path.includes('skincolor') && 
+      obj.name.endsWith('.png')
+    );
+    
+    if (skinLayer) {
+      const skinFile = path.basename(skinLayer.path);
+      skinColor = skinFile.replace('skin.png', '');
+    }
+
     for (let index = 0; index < combination.length; index++) {
       const obj = combination[index];
-      objRarity += obj.rarity ? obj.rarity : 50;
-      totalRarity += 100;
+      const layerName = layerData[index].name;
+      let imagePath = obj.path;
 
-      // Await the loadImage function
-      const image = await loadImage(`./${obj.path}`);
+      if (isGitGud) {
+        const fileName = path.basename(obj.path);
+        
+        // Handle body replacements
+        if (layerName === 'outfit' && fileName === 'buffbodypink.png') {
+          imagePath = path.join(
+            path.dirname(obj.path),
+            '../../',
+            'hardcoded-variations',
+            `${skinColor}buffbody.png`
+          );
+        }
+        
+        // Handle weapon replacements
+        if (layerName === 'weapon' && fileName.startsWith('pinkhand-')) {
+          const weaponPart = fileName.split('pinkhand-')[1];
+          imagePath = path.join(
+            path.dirname(obj.path),
+            '../../',
+            'hardcoded-variations',
+            `${skinColor}hand-${weaponPart}`
+          );
+        }
+      }
+
+      const image = await loadImage(imagePath);
       context.drawImage(
         image,
         JSON.parse(layerData[index].x),
@@ -388,7 +428,7 @@ async function generateUniqueImages(tree, layerData, uuid, name, description, UR
     fs.writeFileSync(__dirname + `/generated/${uuid}/${i}.png`, buffer);
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    const rarityPercentage = (objRarity / totalRarity) * 100;
+    const rarityPercentage = 1 //(objRarity / totalRarity) * 100;
 
     // Metadata Generation
     const dataImage = {
