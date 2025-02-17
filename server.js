@@ -370,6 +370,7 @@ async function generateUniqueImages(tree, layerData, uuid, name, description, UR
   for (let i = 0; i < combinations.length; i++) {
     const combination = combinations[i];
     let skinColor = 'pink'; // Default color
+    let faceVariant = 'face'; // Default color
     let objRarity = 0;
     let totalRarity = 0;
 
@@ -378,10 +379,21 @@ async function generateUniqueImages(tree, layerData, uuid, name, description, UR
       obj.path.includes('skincolor') && 
       obj.name.endsWith('.png')
     );
+
+      // Find face layer
+      const faceLayer = combination.find(obj => 
+        obj.path.includes('face') && 
+        obj.name.endsWith('.png')
+      );
     
     if (skinLayer) {
       const skinFile = path.basename(skinLayer.path);
       skinColor = skinFile.replace('skin.png', '');
+    }
+
+    if (faceLayer) {
+      const faceFile = path.basename(faceLayer.path);
+      faceVariant = faceFile.replace('skin.png', '');
     }
 
     for (let index = 0; index < combination.length; index++) {
@@ -401,7 +413,7 @@ async function generateUniqueImages(tree, layerData, uuid, name, description, UR
             `${skinColor}buffbody.png`
           );
         }
-        
+
         // Handle weapon replacements
         if (layerName === 'weapon' && fileName.startsWith('pinkhand-')) {
           const weaponPart = fileName.split('pinkhand-')[1];
@@ -412,6 +424,62 @@ async function generateUniqueImages(tree, layerData, uuid, name, description, UR
             `${skinColor}hand-${weaponPart}`
           );
         }
+
+        // Handle goofy face hardcodes
+                if (layerName === 'outfit' && fileName.includes('war') && faceVariant === 'face4.png') {
+                  imagePath = path.join(
+                    path.dirname(obj.path),
+                    '../../',
+                    'hardcoded-variations',
+                    `wargoofy.png`
+                  );
+                }
+
+
+                if (layerName === 'outfit' && fileName.includes('buff') && faceVariant === 'face4.png') {
+                  imagePath = path.join(
+                    path.dirname(obj.path),
+                    '../../',
+                    'hardcoded-variations',
+                    `${skinColor}buffbodygoofy.png`
+                  );
+                }
+
+                if (layerName === 'outfit' && fileName.includes('knight') && faceVariant === 'face4.png') {
+                  imagePath = path.join(
+                    path.dirname(obj.path),
+                    '../../',
+                    'hardcoded-variations',
+                    `knightgoofy.png`
+                  );
+                }
+
+                if (layerName === 'outfit' && fileName.includes('wow') && faceVariant === 'face4.png') {
+                  imagePath = path.join(
+                    path.dirname(obj.path),
+                    '../../',
+                    'hardcoded-variations',
+                    `wowgoofy.png`
+                  );
+                }
+
+                if (layerName === 'outfit' && fileName.includes('wow') && faceVariant === 'face4.png') {
+                  imagePath = path.join(
+                    path.dirname(obj.path),
+                    '../../',
+                    'hardcoded-variations',
+                    `wowgoofy.png`
+                  );
+                }
+
+                if (layerName === 'outfit' && fileName.includes('suit') && faceVariant === 'face4.png') {
+                  imagePath = path.join(
+                    path.dirname(obj.path),
+                    '../../',
+                    'hardcoded-variations',
+                    `suitgoofy.png`
+                  );
+                }
       }
 
       const image = await loadImage(imagePath);
